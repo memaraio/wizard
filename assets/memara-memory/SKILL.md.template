@@ -1,0 +1,89 @@
+---
+name: memara-memory
+description: Gives Claude persistent memory across sessions using Memara. Automatically stores important information the user shares (preferences, decisions, project context, facts) and recalls relevant memories before responding. Use whenever the user wants Claude to remember things, references past context, or works on ongoing projects that benefit from continuity.
+---
+
+# Memara Memory
+
+Memara is a persistent memory service connected via MCP. Use it to give this conversation long-term memory — storing what matters and recalling it when relevant.
+
+## When to store a memory
+
+Store a memory when the user:
+- States a preference ("I prefer Python over JavaScript")
+- Makes a decision ("We decided to use PostgreSQL for this project")
+- Shares a fact about themselves or their work ("I'm a solo developer building a SaaS")
+- Completes a meaningful step ("The auth module is done")
+- Provides context that will be useful in future sessions
+
+**Do not** store every message — only things worth remembering long-term.
+
+## When to search memories
+
+Search before responding when:
+- The user references something from a past session ("like we discussed", "remember when")
+- A question is personal or project-specific ("what's my preferred stack?")
+- You're starting work on a named project or task
+- Context from a previous conversation would improve the answer
+
+## Workflow
+
+### At conversation start (for ongoing projects)
+1. Search for relevant memories using `search_memories` (or `{{CONNECTOR_NAME}}:search_memories` if your client prefixes tool names)
+2. If memories found, silently use them to inform your responses — do not list them unless asked
+
+### During conversation
+1. After the user shares something worth remembering, call `store_memory` (or `{{CONNECTOR_NAME}}:store_memory`)
+2. Confirm storage briefly: "Got it, I'll remember that."
+
+### When user asks what you remember
+1. Call `list_memories` (or `{{CONNECTOR_NAME}}:list_memories`) to retrieve recent memories
+2. Present them clearly
+
+## MCP tools
+
+Memara exposes these tools via MCP:
+- `store_memory` — save a self-contained memory fact
+- `search_memories` — semantic search over stored memories
+- `list_memories` — list recent memories
+- `get_server_info` — verify connection and discover exact tool names in your client
+
+Your client may prefix tool names with the connector name. For example:
+- `{{CONNECTOR_NAME}}:store_memory`
+- `{{CONNECTOR_NAME}}:search_memories`
+
+If unsure which names to use, call `get_server_info` or list available MCP tools and use the matching Memara tools.
+
+**Store a memory:**
+Use `store_memory` with:
+- `content`: The memory text — be specific and self-contained (e.g. "User prefers async/await over .then() chains in JavaScript")
+- `tags`: 1–3 relevant tags (e.g. `["coding-style", "javascript"]`)
+
+**Search memories:**
+Use `search_memories` with:
+- `query`: Keywords describing what you're looking for
+- `limit`: 5 (default) — increase to 10 for broad recalls
+
+**List recent memories:**
+Use `list_memories` with:
+- `limit`: 10 — shows most recent memories
+
+## Memory quality guidelines
+
+Write memories as **self-contained facts**, not conversation fragments:
+
+| Bad | Good |
+|-----|------|
+| "user said yes" | "User approved the two-column layout for the dashboard" |
+| "prefers it short" | "User prefers concise responses without bullet points" |
+| "project uses react" | "Project 'Lumina' uses React 18 + TypeScript + Tailwind" |
+
+Include enough context so the memory is useful weeks later with no conversation history.
+
+## Privacy
+
+Only store what the user explicitly shares or clearly intends you to remember. Never store sensitive credentials, passwords, or financial data. If unsure whether to store something, ask: "Should I remember this for future sessions?"
+
+## Reference
+
+See [SETUP.md](SETUP.md) for connecting Memara to Claude and getting an API key.
