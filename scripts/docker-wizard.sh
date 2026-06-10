@@ -161,7 +161,26 @@ PUT_CODE=$(curl -sSL -o /tmp/gh-put.json -w "%{http_code}" \
   -H "Content-Type: application/json" \
   "https://api.github.com/repos/${MEMARA_GH_REPO}/contents/${VERIFY_PATH}" \
   -d "${PUT_BODY}" || echo "000")
-if [ "$PUT_CODE" != "201" ]; then
+if [ "$PUT_CODE" != "201" ] && [ "$PUT_CODE" != "200" ]; then
+  if [ "$PUT_CODE" = "422" ]; then
+    EXISTING_SHA=$(curl -sSL \
+      -H "Authorization: Bearer ${MEMARA_GH_PAT}" \
+      -H "Accept: application/vnd.github+json" \
+      "https://api.github.com/repos/${MEMARA_GH_REPO}/contents/${VERIFY_PATH}" \
+      | node -e 'let d="";process.stdin.on("data",c=>d+=c);process.stdin.on("end",()=>{try{process.stdout.write(JSON.parse(d).sha||"")}catch{}});')
+    if [ -n "${EXISTING_SHA}" ]; then
+      PUT_BODY=$(EXISTING_SHA="${EXISTING_SHA}" node -e 'const c=Buffer.from("memara-wizard pat verify").toString("base64");process.stdout.write(JSON.stringify({message:"memara-wizard PAT verify",content:c,sha:process.env.EXISTING_SHA}));')
+      PUT_CODE=$(curl -sSL -o /tmp/gh-put.json -w "%{http_code}" \
+        -X PUT \
+        -H "Authorization: Bearer ${MEMARA_GH_PAT}" \
+        -H "Accept: application/vnd.github+json" \
+        -H "Content-Type: application/json" \
+        "https://api.github.com/repos/${MEMARA_GH_REPO}/contents/${VERIFY_PATH}" \
+        -d "${PUT_BODY}" || echo "000")
+    fi
+  fi
+fi
+if [ "$PUT_CODE" != "201" ] && [ "$PUT_CODE" != "200" ]; then
   echo "ERROR: Token cannot write to https://github.com/${MEMARA_GH_REPO} (Contents API HTTP ${PUT_CODE})." >&2
   echo "Fine-grained token: Repository permissions → Contents: Read and write (required for github-sync)." >&2
   echo "GET /repos may show permissions.push true for your user; that does not mean the token can write." >&2

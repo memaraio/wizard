@@ -1,6 +1,6 @@
 {
   "name": "@memaraio/wizard",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Install Memara MCP server and memory skill for Cursor, Claude Code, and Claude Desktop",
   "type": "module",
   "bin": {

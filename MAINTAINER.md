@@ -14,6 +14,10 @@ For Memara staff shipping the wizard from the monorepo, mirroring to the public 
 
 - `package.json` → `version`
 
+## Changelog (patch releases)
+
+- **v1.0.1** — Clear, actionable error when an existing `mcp.json` contains invalid JSON (includes file path and parser line hint). Publish: `./scripts/docker-wizard.sh publish-release --yes` (or `publish --yes` if GitHub mirror is already synced).
+
 ## Prerequisites
 
 - Docker with Compose v2

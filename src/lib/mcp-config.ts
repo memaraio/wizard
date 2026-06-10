@@ -34,10 +34,35 @@ export function buildMemaraServerEntry(
   };
 }
 
+const UTF8_BOM = "\uFEFF";
+
+export function parseMcpConfigFile(
+  raw: string,
+  configPath: string,
+): McpConfigFile {
+  let content = raw.startsWith(UTF8_BOM) ? raw.slice(UTF8_BOM.length) : raw;
+  content = content.trim();
+
+  if (!content) {
+    return { mcpServers: {} };
+  }
+
+  try {
+    return JSON.parse(content) as McpConfigFile;
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      throw new Error(
+        `Invalid JSON in ${configPath}: ${error.message}. Fix the file or rename it, then re-run the wizard.`,
+      );
+    }
+    throw error;
+  }
+}
+
 async function readConfig(path: string): Promise<McpConfigFile> {
   try {
     const raw = await readFile(path, "utf8");
-    return JSON.parse(raw) as McpConfigFile;
+    return parseMcpConfigFile(raw, path);
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") {
       return { mcpServers: {} };
