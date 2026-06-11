@@ -2,37 +2,45 @@ import { rm } from "node:fs/promises";
 import { join } from "node:path";
 import { installSkill } from "../lib/skill-install.js";
 import { packSkillZip } from "../lib/skill-pack.js";
-import { getPathTargets, type InstallScope } from "../lib/paths.js";
+import {
+  resolveInstallPlanForSubcommand,
+  type InstallPlan,
+  type InstallPlanOptions,
+} from "../lib/install-plan.js";
+import { getSkillDirsForClients } from "../lib/paths.js";
 import { trackEvent } from "../telemetry.js";
 
-export interface SkillCommandOptions {
-  project?: boolean;
-  connectorName?: string;
-  force?: boolean;
+export interface SkillCommandOptions extends InstallPlanOptions {
+  plan?: InstallPlan;
   output?: string;
 }
 
-function resolveScope(project?: boolean): InstallScope {
-  return project ? "project" : "global";
-}
-
-function skillDirs(scope: InstallScope): string[] {
-  const targets = getPathTargets(scope);
-  return [targets.cursorSkillDir, targets.claudeSkillDir];
-}
-
 export async function skillAdd(opts: SkillCommandOptions): Promise<void> {
-  const scope = resolveScope(opts.project);
-  const connectorName = opts.connectorName ?? "Memara";
+  const plan =
+    opts.plan ??
+    (await resolveInstallPlanForSubcommand({ ...opts, skillOnly: true }));
+
+  const connectorName = plan.connectorName;
+  const targetDirs = getSkillDirsForClients(
+    plan.scope,
+    plan.projectDir,
+    plan.clients,
+  );
+
+  if (targetDirs.length === 0) {
+    console.log("No editors selected for skill install.");
+    return;
+  }
+
   const result = await installSkill({
-    targetDirs: skillDirs(scope),
+    targetDirs,
     connectorName,
-    force: opts.force,
+    force: plan.force,
   });
 
   for (const path of result.installed) {
     console.log(`✓ Installed skill: ${path}`);
-    await trackEvent("wizard_skill_added", { scope, path });
+    await trackEvent("wizard_skill_added", { scope: plan.scope, path });
   }
   for (const path of result.skipped) {
     console.log(`○ Skipped (already exists): ${path} — use --force to overwrite`);
@@ -40,8 +48,15 @@ export async function skillAdd(opts: SkillCommandOptions): Promise<void> {
 }
 
 export async function skillRemove(opts: SkillCommandOptions): Promise<void> {
-  const scope = resolveScope(opts.project);
-  for (const dir of skillDirs(scope)) {
+  const plan =
+    opts.plan ??
+    (await resolveInstallPlanForSubcommand({ ...opts, skillOnly: true }));
+
+  for (const dir of getSkillDirsForClients(
+    plan.scope,
+    plan.projectDir,
+    plan.clients.length ? plan.clients : ["cursor", "claude-code"],
+  )) {
     try {
       await rm(dir, { recursive: true, force: true });
       console.log(`✓ Removed skill directory: ${dir}`);

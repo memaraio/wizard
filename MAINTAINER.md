@@ -14,8 +14,9 @@ For Memara staff shipping the wizard from the monorepo, mirroring to the public 
 
 - `package.json` → `version`
 
-## Changelog (patch releases)
+## Changelog
 
+- **v1.1.0** — Interactive install planner: choose project vs global scope, MCP vs skill, and editors before install; path confirmation; `--install-dir`, `--global`, `--mcp-only`, `--skill-only`, `--yes` flags.
 - **v1.0.1** — Clear, actionable error when an existing `mcp.json` contains invalid JSON (includes file path and parser line hint). Publish: `./scripts/docker-wizard.sh publish-release --yes` (or `publish --yes` if GitHub mirror is already synced).
 
 ## Prerequisites
@@ -88,12 +89,13 @@ Served at `https://memara.io/skills/memara-memory/memara-memory.zip`.
 ## Manual E2E checklist
 
 1. Create Cursor integration at app.memara.io → copy **API key + binding ID**
-2. `npx @memaraio/wizard setup --ci --api-key ... --binding-id ...`
-3. Verify Cursor MCP tools: `store_memory`, `search_memories`, `list_memories`, `get_server_info`
-4. Verify skill at `~/.cursor/skills/memara-memory/`
-5. Repeat for Claude Code (`~/.claude/mcp.json`, `~/.claude/skills/memara-memory/`)
-6. `npx @memaraio/wizard skill pack` → upload zip to Claude Desktop Skills
-7. Confirm zip at `memara.io/skills/memara-memory/memara-memory.zip`
+2. From a git repo: `npx @memaraio/wizard` → confirm **This project** is pre-selected → verify paths under project `.cursor/`
+3. `npx @memaraio/wizard setup --ci --project --api-key ... --binding-id ...` → no prompts, project install
+4. Verify Cursor MCP tools: `store_memory`, `search_memories`, `list_memories`, `get_server_info`
+5. Verify skill at `.cursor/skills/memara-memory/` (project) or `~/.cursor/skills/memara-memory/` (with `--global`)
+6. Repeat for Claude Code (`.mcp.json` / `~/.claude/mcp.json`, `.claude/skills/memara-memory/`)
+7. `npx @memaraio/wizard skill pack` → upload zip to Claude Desktop Skills
+8. Confirm zip at `memara.io/skills/memara-memory/memara-memory.zip`
 
 ## github-sync excludes
 

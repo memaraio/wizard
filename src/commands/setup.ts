@@ -4,12 +4,17 @@ import {
   printClaudeDesktopInstructions,
   printTestInstructions,
 } from "../lib/prompts.js";
+import { resolveInstallPlan, type InstallPlanOptions } from "../lib/install-plan.js";
 import { trackEvent } from "../telemetry.js";
 
-export interface SetupOptions extends McpCommandOptions, SkillCommandOptions {}
+export interface SetupOptions extends InstallPlanOptions {
+  apiKey?: string;
+  bindingId?: string;
+}
 
 export async function runSetup(opts: SetupOptions): Promise<void> {
-  await trackEvent("wizard_started", { command: "setup" });
+  const interactive = !opts.ci && !opts.yes;
+  await trackEvent("wizard_started", { command: "setup", interactive });
 
   console.log("");
   console.log("Memara Wizard — persistent memory for your AI agents");
@@ -17,20 +22,38 @@ export async function runSetup(opts: SetupOptions): Promise<void> {
   console.log("");
 
   try {
-    await mcpAdd(opts);
-    await skillAdd({
-      project: opts.project,
-      connectorName: opts.connectorName,
-      force: opts.force,
-    });
+    const plan = await resolveInstallPlan(opts);
+
+    if (plan.installMcp) {
+      await mcpAdd({ ...opts, plan });
+    }
+    if (plan.installSkill) {
+      await skillAdd({ ...opts, plan });
+    }
+
+    if (!plan.installMcp && !plan.installSkill) {
+      console.log("Nothing selected to install.");
+      return;
+    }
 
     printClaudeDesktopInstructions();
-    printTestInstructions();
+    if (plan.installMcp || plan.installSkill) {
+      printTestInstructions();
+    }
 
     await trackEvent("wizard_completed", {
-      scope: opts.project ? "project" : "global",
+      scope: plan.scope,
+      install_mcp: plan.installMcp,
+      install_skill: plan.installSkill,
+      clients: plan.clients.join(","),
+      prompted: plan.prompted,
+      project_dir_set: Boolean(opts.installDir),
     });
-    console.log("Done! Memara MCP and memory skill are installed.");
+
+    const parts: string[] = [];
+    if (plan.installMcp) parts.push("MCP");
+    if (plan.installSkill) parts.push("memory skill");
+    console.log(`Done! Memara ${parts.join(" and ")} installed (${plan.scope}).`);
   } catch (error) {
     await trackEvent("wizard_failed", {
       message: error instanceof Error ? error.message : String(error),

@@ -7,20 +7,19 @@ import {
   detectInstalledClients,
   type McpClientId,
 } from "../lib/mcp-clients.js";
-import { getPathTargets, type InstallScope } from "../lib/paths.js";
+import {
+  resolveInstallPlanForSubcommand,
+  type InstallPlan,
+  type InstallPlanOptions,
+} from "../lib/install-plan.js";
+import { getMcpConfigPathForClient } from "../lib/paths.js";
 import { promptCredentials } from "../lib/prompts.js";
 import { trackEvent } from "../telemetry.js";
 
-export interface McpCommandOptions {
+export interface McpCommandOptions extends InstallPlanOptions {
   apiKey?: string;
   bindingId?: string;
-  project?: boolean;
-  ci?: boolean;
-  clients?: McpClientId[];
-}
-
-function resolveScope(project?: boolean): InstallScope {
-  return project ? "project" : "global";
+  plan?: InstallPlan;
 }
 
 async function resolveCredentials(
@@ -35,42 +34,41 @@ async function resolveCredentials(
   });
 }
 
-function configPathsForClient(
-  clientId: McpClientId,
-  scope: InstallScope,
-): string[] {
-  const targets = getPathTargets(scope);
-  if (clientId === "cursor") return [targets.cursorMcpConfig];
-  return [targets.claudeMcpConfig];
-}
-
 export async function mcpAdd(opts: McpCommandOptions): Promise<void> {
+  const plan =
+    opts.plan ??
+    (await resolveInstallPlanForSubcommand({ ...opts, mcpOnly: true }));
+
   const credentials = await resolveCredentials(opts);
-  const scope = resolveScope(opts.project);
-  const installed = opts.clients?.length
-    ? opts.clients
+  const clients = plan.clients.length
+    ? plan.clients
     : (await detectInstalledClients()).map((c) => c.id);
 
-  if (installed.length === 0) {
+  if (clients.length === 0) {
     console.log("No supported MCP clients detected (Cursor, Claude Code).");
-    console.log("Install Cursor or Claude Code, or specify --clients cursor,claude-code");
+    console.log(
+      "Install Cursor or Claude Code, or specify --clients cursor,claude-code",
+    );
     return;
   }
 
   const written: string[] = [];
-  for (const clientId of installed) {
-    for (const configPath of configPathsForClient(clientId, scope)) {
-      const result = await mergeMemaraMcpServer(configPath, credentials);
-      written.push(result.path);
-      await trackEvent("wizard_mcp_added", {
-        client: clientId,
-        scope,
-        created: result.created,
-      });
-      console.log(
-        `✓ Memara MCP configured for ${clientId} (${scope}): ${result.path}`,
-      );
-    }
+  for (const clientId of clients) {
+    const configPath = getMcpConfigPathForClient(
+      clientId,
+      plan.scope,
+      plan.projectDir,
+    );
+    const result = await mergeMemaraMcpServer(configPath, credentials);
+    written.push(result.path);
+    await trackEvent("wizard_mcp_added", {
+      client: clientId,
+      scope: plan.scope,
+      created: result.created,
+    });
+    console.log(
+      `✓ Memara MCP configured for ${clientId} (${plan.scope}): ${result.path}`,
+    );
   }
 
   if (written.length === 0) {
@@ -79,17 +77,23 @@ export async function mcpAdd(opts: McpCommandOptions): Promise<void> {
 }
 
 export async function mcpRemove(opts: McpCommandOptions): Promise<void> {
-  const scope = resolveScope(opts.project);
-  const clients = opts.clients?.length
-    ? opts.clients
+  const plan =
+    opts.plan ??
+    (await resolveInstallPlanForSubcommand({ ...opts, mcpOnly: true }));
+
+  const clients = plan.clients.length
+    ? plan.clients
     : (["cursor", "claude-code"] as McpClientId[]);
 
   for (const clientId of clients) {
-    for (const configPath of configPathsForClient(clientId, scope)) {
-      const removed = await removeMemaraMcpServer(configPath);
-      if (removed) {
-        console.log(`✓ Removed Memara MCP from ${clientId}: ${configPath}`);
-      }
+    const configPath = getMcpConfigPathForClient(
+      clientId,
+      plan.scope,
+      plan.projectDir,
+    );
+    const removed = await removeMemaraMcpServer(configPath);
+    if (removed) {
+      console.log(`✓ Removed Memara MCP from ${clientId}: ${configPath}`);
     }
   }
 }

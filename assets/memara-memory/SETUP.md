@@ -8,9 +8,13 @@
 
 ## Quick install (Cursor & Claude Code)
 
+Run from your **project directory**:
+
 ```bash
 npx @memaraio/wizard
 ```
+
+The wizard asks where to install (this project vs globally), what to install (MCP / skill), and which editors. **Project install** (recommended) writes to `.cursor/` and `.claude/` in your repo; **global install** writes to `~/.cursor/` and `~/.claude/`.
 
 You will need your **API key** and **binding ID** from the Memara dashboard after creating an integration.
 

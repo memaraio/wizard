@@ -5,6 +5,7 @@ import { mcpAdd, mcpRemove } from "./commands/mcp.js";
 import { skillAdd, skillRemove, skillPack } from "./commands/skill.js";
 import { initTelemetry, shutdownTelemetry } from "./telemetry.js";
 import { getWizardVersion } from "./version.js";
+import type { InstallPlanOptions } from "./lib/install-plan.js";
 import type { McpClientId } from "./lib/mcp-clients.js";
 
 function parseClients(value: string): McpClientId[] {
@@ -12,6 +13,24 @@ function parseClients(value: string): McpClientId[] {
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean) as McpClientId[];
+}
+
+function buildPlanOptions(
+  opts: Record<string, unknown>,
+  extra?: { clients?: McpClientId[]; mcpOnly?: boolean; skillOnly?: boolean },
+): InstallPlanOptions {
+  return {
+    project: opts.project as boolean | undefined,
+    global: opts.global as boolean | undefined,
+    installDir: opts.installDir as string | undefined,
+    mcpOnly: extra?.mcpOnly ?? (opts.mcpOnly as boolean | undefined),
+    skillOnly: extra?.skillOnly ?? (opts.skillOnly as boolean | undefined),
+    yes: opts.yes as boolean | undefined,
+    ci: opts.ci as boolean | undefined,
+    clients: extra?.clients ?? (opts.clients as McpClientId[] | undefined),
+    connectorName: opts.connectorName as string | undefined,
+    force: opts.force as boolean | undefined,
+  };
 }
 
 const program = new Command();
@@ -23,10 +42,23 @@ program
   )
   .version(getWizardVersion())
   .option("--project", "Install to current project instead of global home directory")
+  .option("--global", "Install globally (home directory) for all projects")
+  .option(
+    "--install-dir <path>",
+    "Project directory to install into (implies --project)",
+  )
+  .option("--mcp-only", "Install MCP server only (skip skill)")
+  .option("--skill-only", "Install memory skill only (skip MCP)")
+  .option("--yes", "Skip confirmation prompt; accept defaults for unanswered options")
   .option("--connector-name <name>", "Connector name for skill examples", "Memara")
   .option("--api-key <key>", "Memara integration API key")
   .option("--binding-id <id>", "Memara integration binding ID")
-  .option("--ci", "Non-interactive mode (requires --api-key and --binding-id)")
+  .option(
+    "--clients <ids>",
+    "Comma-separated editors: cursor,claude-code",
+    parseClients,
+  )
+  .option("--ci", "Non-interactive mode (requires --api-key and --binding-id for MCP)")
   .option("--no-telemetry", "Disable PostHog telemetry")
   .option("--force", "Overwrite existing skill files")
   .option("--debug", "Enable debug logging");
@@ -39,12 +71,9 @@ program
     initTelemetry({ noTelemetry: opts.telemetry === false });
     try {
       await runSetup({
-        project: opts.project,
-        connectorName: opts.connectorName,
-        apiKey: opts.apiKey,
-        bindingId: opts.bindingId,
-        ci: opts.ci,
-        force: opts.force,
+        ...buildPlanOptions(opts),
+        apiKey: opts.apiKey as string | undefined,
+        bindingId: opts.bindingId as string | undefined,
       });
     } finally {
       await shutdownTelemetry();
@@ -62,11 +91,9 @@ mcp
     initTelemetry({ noTelemetry: opts.telemetry === false });
     try {
       await mcpAdd({
-        project: opts.project,
-        apiKey: opts.apiKey,
-        bindingId: opts.bindingId,
-        ci: opts.ci,
-        clients: cmdOpts.clients,
+        ...buildPlanOptions(opts, { clients: cmdOpts.clients, mcpOnly: true }),
+        apiKey: opts.apiKey as string | undefined,
+        bindingId: opts.bindingId as string | undefined,
       });
     } finally {
       await shutdownTelemetry();
@@ -80,8 +107,7 @@ mcp
   .action(async (cmdOpts: { clients?: McpClientId[] }) => {
     const opts = program.opts();
     await mcpRemove({
-      project: opts.project,
-      clients: cmdOpts.clients,
+      ...buildPlanOptions(opts, { clients: cmdOpts.clients, mcpOnly: true }),
     });
   });
 
@@ -95,9 +121,7 @@ skill
     initTelemetry({ noTelemetry: opts.telemetry === false });
     try {
       await skillAdd({
-        project: opts.project,
-        connectorName: opts.connectorName,
-        force: opts.force,
+        ...buildPlanOptions(opts, { skillOnly: true }),
       });
     } finally {
       await shutdownTelemetry();
@@ -109,7 +133,9 @@ skill
   .description("Remove memara-memory skill directories")
   .action(async () => {
     const opts = program.opts();
-    await skillRemove({ project: opts.project });
+    await skillRemove({
+      ...buildPlanOptions(opts, { skillOnly: true }),
+    });
   });
 
 skill
@@ -120,7 +146,7 @@ skill
     const opts = program.opts();
     await skillPack({
       output: cmdOpts.output,
-      connectorName: opts.connectorName,
+      connectorName: opts.connectorName as string | undefined,
     });
   });
 
