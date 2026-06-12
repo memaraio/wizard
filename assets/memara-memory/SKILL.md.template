@@ -1,6 +1,13 @@
 ---
 name: memara-memory
-description: Gives Claude persistent memory across sessions using Memara. Automatically stores important information the user shares (preferences, decisions, project context, facts) and recalls relevant memories before responding. Use whenever the user wants Claude to remember things, references past context, or works on ongoing projects that benefit from continuity.
+description: >-
+  Persistent memory across sessions via Memara MCP. Stores preferences, decisions,
+  project context, and facts; recalls relevant memories before responding. Use when
+  the user mentions memory, remember, recall, store, save, forget, past context,
+  previous session, continuity, or ongoing projects. Ingestion triggers: remember this,
+  save this, store this, don't forget, add to memory. Retrieval triggers: recall,
+  check memory, search memory, what do you know about me, from memory, like we discussed.
+  When in doubt, use this skill.
 ---
 
 # Memara Memory
@@ -15,6 +22,7 @@ Store a memory when the user:
 - Shares a fact about themselves or their work ("I'm a solo developer building a SaaS")
 - Completes a meaningful step ("The auth module is done")
 - Provides context that will be useful in future sessions
+- Explicitly asks to store/remember/save ("store this", "remember that I use Postgres")
 
 **Do not** store every message — only things worth remembering long-term.
 
@@ -25,6 +33,15 @@ Search before responding when:
 - A question is personal or project-specific ("what's my preferred stack?")
 - You're starting work on a named project or task
 - Context from a previous conversation would improve the answer
+- Explicitly asks to recall or check memory ("check memory", "what do you remember about X")
+
+## When NOT to use
+
+Do not store or search Memara when the user is discussing **system or program memory**, not personal or project knowledge:
+- In-memory cache, heap/RAM, memory leaks, garbage collection
+- Model context window limits or token budgets
+
+If the topic is technical runtime memory, not Memara persistence, skip Memara tools.
 
 ## Workflow
 
@@ -33,8 +50,9 @@ Search before responding when:
 2. If memories found, silently use them to inform your responses — do not list them unless asked
 
 ### During conversation
-1. After the user shares something worth remembering, call `store_memory` (or `{{CONNECTOR_NAME}}:store_memory`)
-2. Confirm storage briefly: "Got it, I'll remember that."
+1. On explicit "remember/store/save" commands, store immediately; otherwise apply the quality filter below
+2. After the user shares something worth remembering, call `store_memory` (or `{{CONNECTOR_NAME}}:store_memory`)
+3. Confirm storage briefly: "Got it, I'll remember that."
 
 ### When user asks what you remember
 1. Call `list_memories` (or `{{CONNECTOR_NAME}}:list_memories`) to retrieve recent memories

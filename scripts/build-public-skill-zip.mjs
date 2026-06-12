@@ -24,6 +24,11 @@ const uiPublicDir = join(
   "memara-memory",
 );
 const zipOut = join(uiPublicDir, "memara-memory.zip");
+const repoRoot = join(pkgRoot, "..", "..");
+const repoSkillDirs = [
+  join(repoRoot, ".cursor", "skills", "memara-memory"),
+  join(repoRoot, ".claude", "skills", "memara-memory"),
+];
 
 async function renderSkill() {
   const template = await readFile(
@@ -55,4 +60,10 @@ await writeFile(join(uiPublicDir, "SKILL.md"), skillContent, "utf8");
 await cp(join(assetsDir, "SETUP.md"), join(uiPublicDir, "SETUP.md"));
 await packZip(zipOut, skillContent, setupContent);
 
+for (const dir of repoSkillDirs) {
+  await mkdir(dir, { recursive: true });
+  await writeFile(join(dir, "SKILL.md"), skillContent, "utf8");
+}
+
 console.log(`build-public-skill-zip: ${zipOut}`);
+console.log(`synced repo skill copies: ${repoSkillDirs.join(", ")}`);

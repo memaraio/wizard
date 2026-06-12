@@ -9,7 +9,7 @@ npx @memaraio/wizard
 
 ## Quick start
 
-1. Create an integration at [app.memara.io](https://app.memara.io) ([Cursor](/integrations/cursor) or [Claude Desktop](/integrations/claude-desktop) for API key + binding ID).
+1. Create a **Bare MCP** integration at [app.memara.io](https://app.memara.io) ([Bare MCP](/integrations/bare-mcp)). After creation, copy the **wizard install command** from the success screen (or copy your API key + binding ID).
 2. From your **project directory**, run the wizard (interactive):
 
 ```bash
@@ -18,7 +18,13 @@ npx @memaraio/wizard
 
 The wizard asks where to install (this project vs globally), what to install (MCP / skill), which editors, and shows the exact paths before writing files.
 
-3. Non-interactive (CI/scripts):
+3. One-line install (from the dashboard copy button or with your credentials):
+
+```bash
+npx @memaraio/wizard --project --yes --api-key "YOUR_KEY" --binding-id "YOUR_BINDING_UUID"
+```
+
+4. Non-interactive for CI/scripts:
 
 ```bash
 npx @memaraio/wizard setup --ci --project --api-key YOUR_KEY --binding-id YOUR_BINDING_UUID

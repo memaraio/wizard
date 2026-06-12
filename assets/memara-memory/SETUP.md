@@ -16,21 +16,22 @@ npx @memaraio/wizard
 
 The wizard asks where to install (this project vs globally), what to install (MCP / skill), and which editors. **Project install** (recommended) writes to `.cursor/` and `.claude/` in your repo; **global install** writes to `~/.cursor/` and `~/.claude/`.
 
-You will need your **API key** and **binding ID** from the Memara dashboard after creating an integration.
+You will need your **API key** and **binding ID** from the Memara dashboard after creating a **Bare MCP** integration.
 
 ## Create an integration
 
-### Cursor
+### Bare MCP (recommended for wizard)
 
 1. Log in at [app.memara.io](https://app.memara.io)
-2. Go to **Integrations → Cursor** ([memara.io/integrations/cursor](https://memara.io/integrations/cursor))
-3. Create an integration and copy your **API key** and **binding ID**
+2. Go to **Integrations → Bare MCP** ([memara.io/integrations/bare-mcp](https://memara.io/integrations/bare-mcp))
+3. Create an integration in your memory space
+4. On the success screen, click **Copy wizard command** and run it in your project directory
 
-### Claude Code
+Or copy your **API key** and **binding ID** individually and run:
 
-1. Log in at [app.memara.io](https://app.memara.io)
-2. Go to **Integrations → Claude Desktop** ([memara.io/integrations/claude-desktop](https://memara.io/integrations/claude-desktop))
-3. Create an integration and copy your **API key** and **binding ID**
+```bash
+npx @memaraio/wizard --project --yes --api-key "YOUR_API_KEY" --binding-id "YOUR_BINDING_ID"
+```
 
 ## API-key MCP configuration
 

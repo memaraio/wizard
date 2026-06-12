@@ -16,6 +16,7 @@ For Memara staff shipping the wizard from the monorepo, mirroring to the public 
 
 ## Changelog
 
+- **v1.1.1** — memara-memory skill: aggressive trigger description; explicit store/recall commands; "When NOT to use" guardrails; pack script syncs in-repo skill copies.
 - **v1.1.0** — Interactive install planner: choose project vs global scope, MCP vs skill, and editors before install; path confirmation; `--install-dir`, `--global`, `--mcp-only`, `--skill-only`, `--yes` flags.
 - **v1.0.1** — Clear, actionable error when an existing `mcp.json` contains invalid JSON (includes file path and parser line hint). Publish: `./scripts/docker-wizard.sh publish-release --yes` (or `publish --yes` if GitHub mirror is already synced).
 
@@ -88,7 +89,7 @@ Served at `https://memara.io/skills/memara-memory/memara-memory.zip`.
 
 ## Manual E2E checklist
 
-1. Create Cursor integration at app.memara.io → copy **API key + binding ID**
+1. Create **Bare MCP** integration at app.memara.io → copy **wizard command** (or API key + binding ID)
 2. From a git repo: `npx @memaraio/wizard` → confirm **This project** is pre-selected → verify paths under project `.cursor/`
 3. `npx @memaraio/wizard setup --ci --project --api-key ... --binding-id ...` → no prompts, project install
 4. Verify Cursor MCP tools: `store_memory`, `search_memories`, `list_memories`, `get_server_info`

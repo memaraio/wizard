@@ -20,6 +20,12 @@ describe("skill-pack", () => {
         encoding: "utf8",
       });
       assert.match(skillInZip, /TestConn:store_memory/);
+      assert.match(skillInZip, /remember/);
+      assert.match(skillInZip, /recall/);
+      assert.match(skillInZip, /store/);
+      assert.match(skillInZip, /check memory/);
+      assert.match(skillInZip, /When in doubt, use this skill/);
+      assert.match(skillInZip, /When NOT to use/);
     } finally {
       await rm(dir, { recursive: true, force: true });
     }
